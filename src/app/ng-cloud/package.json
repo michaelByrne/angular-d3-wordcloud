@@ -1,0 +1,10 @@
+{
+  "name": "anguar-d3-wordcloud",
+  "version": "0.1.0",
+  "description": "Angular 2/4 component for Wordle-style wordcloud layouts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael Byrne",
+  "license": "MIT"
+}
