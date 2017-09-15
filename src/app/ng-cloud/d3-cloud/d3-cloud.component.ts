@@ -2,7 +2,8 @@ import { Component, Input, ElementRef, DoCheck, KeyValueDiffers } from '@angular
 
 import * as D3 from 'd3';
 
-import { D3CloudService } from '../d3-cloud.service';
+import { D3CloudService, CloudConfig } from '../d3-cloud.service';
+
 
 @Component({
 	selector: 'd3-wordcloud',
@@ -12,7 +13,7 @@ import { D3CloudService } from '../d3-cloud.service';
 export class D3CloudComponent implements DoCheck {
 
 	@Input() words: Array<any>;
-	@Input() config: any;
+	@Input() config: CloudConfig;
 
 	private _host;              // D3 object referencing host DOM object
 	private _svg;               // SVG in which we will print our chart
@@ -38,6 +39,7 @@ export class D3CloudComponent implements DoCheck {
 		this._host = D3.select(this._element.nativeElement); // Selects parent element as host element
 		this._objDifferConfig = this._keyValueDiffersConfig.find([]).create(null);
 		this._objDifferWords = this._keyValueDiffersWords.find([]).create(null);
+
 	}
 
 	ngDoCheck() {
@@ -47,8 +49,10 @@ export class D3CloudComponent implements DoCheck {
 			if (!this.config) {
 				return;
 			}
+
 			this._setup();
 			this._buildCloud();
+
 		}
 	}
 
@@ -68,18 +72,16 @@ export class D3CloudComponent implements DoCheck {
 		}
 		this._height = this._width * 0.75 - this._margin.top - this._margin.bottom;
 
-		this._minCount = D3.min(this.words, d => d.size);
-		this._maxCount = D3.max(this.words, d => d.size);
+		this._rotations = this._calculateRotationAngles(this.config.rotationLow, this.config.rotationHigh, this.config.rotationNum);
+		this.cloudService.spiral = this.config.spiral;
+		this._scaleFonts(this.words, this.config.minFontSize, this.config.maxFontSize);
+		this._setRotations(this.words, this._rotations);
 
 		let minFontSize: number = (this.config.minFontSize == null) ? 50 : this.config.minFontSize;
 		let maxFontSize: number = (this.config.maxFontSize == null) ? 10 : this.config.maxFontSize;
-
-
-		this._fontScale = D3.scaleSqrt()
-			.domain([this._minCount, this._maxCount])
-			.range([minFontSize, maxFontSize]);
+		this.cloudService.size = [this._width, this._height];
 		this._fillScale = D3.scaleOrdinal(D3.schemeCategory10);
-		this._rotations = this._calculateRotationAngles(this.config.rotationLow, this.config.rotationHigh, this.config.rotationNum);
+
 	}
 
 	private _buildCloud() {
@@ -96,8 +98,6 @@ export class D3CloudComponent implements DoCheck {
 			.append('g')
 			.attr('transform', 'translate(' + ~~(this._width / 2) + ',' + ~~(this._height / 2) + ')')
 
-		this.cloudService.size[0] = this._width;
-		this.cloudService.size[1] = this._height;
 		this.cloudService.start(this.words, this.config);
 		this._drawWordCloud(this.words);
 
@@ -134,6 +134,29 @@ export class D3CloudComponent implements DoCheck {
 			counter++;
 		}
 		return rotations;
+	}
+
+	private _scaleFonts(wordMap: Array<any>, minFont: number, maxFont: number) {
+		let minCount = D3.min(wordMap, d => d.size);
+		let maxCount = D3.max(wordMap, d => d.size);
+		let fontScale = D3.scaleSqrt()
+			.domain([minCount, maxCount])
+			.range([minFont, maxFont]);
+
+		wordMap.forEach(
+			(d) => { d.size = fontScale(d.size) }
+		)
+
+		return Promise.resolve();
+	}
+
+	private _setRotations(wordMap: Array<any>, rotations: Array<number>) {
+
+		wordMap.forEach(
+			(d) => { d.rotate = rotations[Math.floor(Math.random() * rotations.length)]; }
+		)
+
+		return Promise.resolve();
 	}
 
 

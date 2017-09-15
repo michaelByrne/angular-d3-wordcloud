@@ -1,6 +1,21 @@
 import { Injectable, ElementRef } from '@angular/core';
 
 
+export class CloudConfig {
+	constructor(
+		public fontFace: string,
+		public minFontSize: number,
+		public maxFontSize: number,
+		public spiral: string,
+		public fontWeight: string,
+		public rotationLow: number,
+		public rotationHigh: number,
+		public rotationNum: number,
+		public padding: number
+	) { }
+
+}
+
 
 @Injectable()
 export class D3CloudService {
@@ -9,8 +24,8 @@ export class D3CloudService {
 	cw = 1 << 11 >> 5;
 	ch = 1 << 11;
 	size = [256, 256];
-	contextAndRatio: any = this.getContext();
-	board: Array<number> = this.zeroArray((this.size[0] >> 5) * this.size[1]);
+	contextAndRatio: any = this._getContext();
+	board: Array<number> = this._zeroArray((this.size[0] >> 5) * this.size[1]);
 	tags = [];
 	words: any;
 	n: number;
@@ -19,15 +34,19 @@ export class D3CloudService {
 	timer: any;
 	timeInterval: number = Infinity;
 	bounds = null;
+	spiral: string = "archimedean";
 
 
-	start(words, config): void {
+	start(words, config): any {
 		let c = this.contextAndRatio.context,
-			ratio = this.contextAndRatio.ratio;
+			ratio = this.contextAndRatio.ratio,
+			returnFlag = false;
 		this.words = words;
 		this.i = -1;
 		this.n = this.words.length;
 		this.timer = null;
+		this.board = this._zeroArray((this.size[0] >> 5) * this.size[1]);
+		this.bounds = null;
 
 		c.clearRect(0, 0, (this.cw << 5) / ratio, this.ch / ratio);
 
@@ -36,7 +55,8 @@ export class D3CloudService {
 			d.font = "Impact";
 			d.style = "normal";
 			d.weight = "normal";
-			d.rotate = (~~(Math.random() * 6) - 3) * 30;
+			//d.rotate = (~~(Math.random() * 6) - 3) * 30;
+			d.rotate = d.rotate;
 			d.size = d.size;
 			d.padding = 1;
 			return d;
@@ -44,11 +64,11 @@ export class D3CloudService {
 
 		if (this.timer)
 			clearInterval(this.timer);
-		this.timer = setInterval(this.step, 2);
-		this.step();
+		this.timer = setInterval(this._step, 0);
+		this._step();
 	}
 
-	step(): void {
+	private _step(): any {
 		let start = Date.now(),
 			xStart = this.size[0] / 2,
 			yStart = this.size[1] / 2;
@@ -57,11 +77,12 @@ export class D3CloudService {
 			let d = this.words[this.i];
 			d.x = xStart;
 			d.y = yStart;
-			this.cloudSprite(this.contextAndRatio, d, this.words, this.i);
-			if (d.hasText && this.place(this.board, d, this.bounds)) {
+			this._cloudSprite(this.contextAndRatio, d, this.words, this.i);
+
+			if (d.hasText && this._place(this.board, d, this.bounds)) {
 				this.tags.push(d);
 				if (this.bounds) {
-					this.cloudBounds(this.bounds, d);
+					this._cloudBounds(this.bounds, d);
 				}
 				else this.bounds = [{ x: d.x + d.x0, y: d.y + d.y0 }, { x: d.x + d.x1, y: d.y + d.y1 }];
 				// Temporary hack
@@ -69,19 +90,22 @@ export class D3CloudService {
 				d.y -= this.size[1] >> 1;
 			}
 		}
+
 		if (this.i >= this.n) {
-			this.stop();
+			console.log("exit");
+			this._stop();
+
 		}
 	}
 
-	stop(): void {
+	private _stop(): void {
 		if (this.timer) {
 			clearInterval(this.timer);
 			this.timer = null;
 		}
 	};
 
-	cloudSprite(contextAndRatio, d, data, di): any {
+	private _cloudSprite(contextAndRatio, d, data, di): any {
 		if (d.sprite) return;
 		let c = contextAndRatio.context,
 			ratio = contextAndRatio.ratio;
@@ -174,7 +198,7 @@ export class D3CloudService {
 		}
 	}
 
-	getContext(): any {
+	private _getContext(): any {
 		let canvas = document.createElement('canvas');
 		canvas.width = canvas.height = 1;
 		let ratio = Math.sqrt(canvas.getContext("2d").getImageData(0, 0, 1, 1).data.length >> 2);
@@ -186,7 +210,7 @@ export class D3CloudService {
 		return { context: ctx, ratio: ratio };
 	}
 
-	archimedeanSpiral(size): (number) => Array<number> {
+	private _archimedeanSpiral(size): (number) => Array<number> {
 		let e = size[0] / size[1];
 		return (t) => [
 			e * (t *= .1) * Math.cos(t),
@@ -195,7 +219,7 @@ export class D3CloudService {
 	}
 
 
-	rectangularSpiral(size): (number) => Array<number> {
+	private _rectangularSpiral(size): (number) => Array<number> {
 		let dy = 4,
 			dx = dy * size[0] / size[1],
 			x = 0,
@@ -221,7 +245,7 @@ export class D3CloudService {
 		};
 	}
 
-	cloudCollide(tag, board, sw): boolean {
+	private _cloudCollide(tag, board, sw): boolean {
 		sw >>= 5;
 		let sprite = tag.sprite,
 			w = tag.width >> 5,
@@ -245,19 +269,25 @@ export class D3CloudService {
 		return false;
 	}
 
-	collideRects(a, b): boolean {
+	private _collideRects(a, b): boolean {
 		let coll = a.x + a.x1 > b[0].x && a.x + a.x0 < b[1].x && a.y + a.y1 > b[0].y && a.y + a.y0 < b[1].y;
 		return coll;
 	}
 
-	place(board, tag, bounds): boolean {
-		let perimeter = [{ x: 0, y: 0 }, { x: this.size[0], y: this.size[1] }],
+	private _place(board, tag, bounds): boolean {
+		let s,
+			perimeter = [{ x: 0, y: 0 }, { x: this.size[0], y: this.size[1] }],
 			startX = tag.x,
 			startY = tag.y,
-			maxDelta = Math.sqrt(this.size[0] * this.size[0] + this.size[1] * this.size[1]),
-			s = this.archimedeanSpiral(this.size),
-			// dt = Math.random() < .5 ? 1 : -1,
-			dt = 1,
+			maxDelta = Math.sqrt(this.size[0] * this.size[0] + this.size[1] * this.size[1]);
+		if (this.spiral == "archimedean") {
+			s = this._archimedeanSpiral(this.size);
+		}
+		else if (this.spiral == "rectangular") {
+			s = this._rectangularSpiral(this.size);
+		}
+		// dt = Math.random() < .5 ? 1 : -1,
+		let dt = 1,
 			t = -dt,
 			dxdy,
 			dx,
@@ -276,8 +306,8 @@ export class D3CloudService {
 				tag.x + tag.x1 > this.size[0] || tag.y + tag.y1 > this.size[1]) continue;
 			// TODO only check for collisions within current bounds.
 
-			if (!bounds || !this.cloudCollide(tag, board, this.size[0])) {
-				if (!bounds || this.collideRects(tag, bounds)) {
+			if (!bounds || !this._cloudCollide(tag, board, this.size[0])) {
+				if (!bounds || this._collideRects(tag, bounds)) {
 					let sprite = tag.sprite,
 						w = tag.width >> 5,
 						sw = this.size[0] >> 5,
@@ -302,7 +332,7 @@ export class D3CloudService {
 		return false;
 	}
 
-	cloudBounds(bounds, d): any {
+	private _cloudBounds(bounds, d): any {
 		let b0 = bounds[0],
 			b1 = bounds[1];
 		if (d.x + d.x0 < b0.x) b0.x = d.x + d.x0;
@@ -312,7 +342,7 @@ export class D3CloudService {
 	}
 
 
-	zeroArray(n): Array<0> {
+	private _zeroArray(n): Array<0> {
 		let a = [],
 			i = -1;
 		while (++i < n) a[i] = 0;
