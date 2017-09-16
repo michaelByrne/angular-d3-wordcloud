@@ -26,24 +26,28 @@ export class AppModule { }
 
 The component's API looks like this. The main things you'd want to mess with are the font mins and maxes and the number of possible rotation angles (to a max of 10). 
 
-#### fontFace: string
+##### fontFace: string
 - Not currently implemented, defaults to "Impact"
 
-minFontSize: number
+#### minFontSize: number
 
-maxFontSize: number
+#### maxFontSize: number
 
-spiral: string
+#### spiral: string
+- "rectangular" or "archimedean." Read up on what this means (and how the algorithm works) [here](https://www.jasondavies.com/wordcloud/about/).
 
-fontWeight: string
+##### fontWeight: string
 - Not current implemented, defaults to "normal"
 
-rotationLow: number
+#### rotationLow: number
+- The lowest possible rotation angle. Defaults to -90 degrees.
 
-rotationHigh: number
+#### rotationHigh: number
+- The highest possible rotation angle. Defaults to 90 degrees.
 
-rotationNum: number
+#### rotationNum: number
+- The number of possible rotations. Each word is randomly assigned a rotation from the lowest possible angle to highest possible angle. If there are three possible angles from -90 to 90, then the words could be rotated -90 degrees, 0 degrees, or 90 degrees. Five possible would make the possibilities -90, -45, 0, 45, 90. And so forth. 
 
-padding: number
+
 
 
