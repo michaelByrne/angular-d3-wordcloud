@@ -48,6 +48,10 @@ The component's API looks like this. The main things you'd want to mess with are
 #### rotationNum: number
 - The number of possible rotations. Each word is randomly assigned a rotation from the lowest possible angle to highest possible angle. If there are three possible angles from -90 to 90, then the words could be rotated -90 degrees, 0 degrees, or 90 degrees. Five possible would make the possibilities -90, -45, 0, 45, 90. And so forth. 
 
+## Example
+
+The outer App Module in this project demonstrates the word cloud and offers some options to play around with it. It can also serve as a guideline for using it in your own projects. It's an Angular CLI project so just a usual npm install and then ng serve will get you up and running locally.  
+
 
 
 
